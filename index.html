@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>期末冲刺！— 大学生肉鸽模拟器</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --panel: #16213e;
+  --accent: #e2b04a;
+  --knowledge: #4cc9f0;
+  --energy: #06d6a0;
+  --score: #f72585;
+  --danger: #ef476f;
+  --text: #e0e0e0;
+  --dim: #888;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow-x:hidden;
+}
+#game {
+  width:100%;
+  max-width:920px;
+  min-height:100vh;
+  padding:20px;
+  display:flex;
+  flex-direction:row;
+  align-items:flex-start;
+  justify-content:center;
+  gap:20px;
+}
+#main-col {
+  flex:1;
+  max-width:520px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+#history-sidebar {
+  width:240px;
+  flex-shrink:0;
+  background:var(--panel);
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  position:sticky;
+  top:20px;
+}
+#history-sidebar h3 {
+  color:var(--accent);
+  font-size:15px;
+  text-align:center;
+  margin:0;
+}
+#history-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+#history-table th {
+  color:var(--dim);
+  padding:4px 6px;
+  border-bottom:1px solid #333;
+}
+#history-table td {
+  padding:4px 6px;
+  text-align:center;
+  border-bottom:1px solid #222;
+}
+#history-chart {
+  width:100%;
+  border-radius:8px;
+  background:#0d1117;
+}
+.history-empty {
+  color:var(--dim);
+  font-size:12px;
+  text-align:center;
+  padding:20px 0;
+}
+
+/* ===== HEADER STATS BAR ===== */
+#stats-bar {
+  width:100%;
+  display:flex;
+  gap:10px;
+  margin-bottom:16px;
+}
+.stat-card {
+  flex:1;
+  background:var(--panel);
+  border-radius:12px;
+  padding:10px 8px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.stat-card .icon { font-size:22px; }
+.stat-card .label { font-size:11px; color:var(--dim); margin-top:2px; }
+.stat-card .value { font-size:22px; font-weight:bold; margin-top:2px; }
+.stat-card.knowledge .value { color:var(--knowledge); }
+.stat-card.energy .value { color:var(--energy); }
+.stat-card.score .value { color:var(--score); }
+.stat-card .bar-wrap {
+  height:4px; background:#333; border-radius:2px; margin-top:6px; overflow:hidden;
+}
+.stat-card .bar-fill {
+  height:100%; border-radius:2px; transition:width 0.5s;
+}
+.stat-card.knowledge .bar-fill { background:var(--knowledge); }
+.stat-card.energy .bar-fill { background:var(--energy); }
+.stat-card.score .bar-fill { background:var(--score); }
+
+/* ===== DAY/TIME INDICATOR ===== */
+#day-indicator {
+  display:flex; gap:6px; margin-bottom:16px; align-items:center;
+}
+.day-dot {
+  width:32px; height:32px; border-radius:50%;
+  background:var(--panel); border:2px solid #333;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:bold;
+  transition:all 0.3s;
+}
+.day-dot.active { border-color:var(--accent); background:#2a1f00; color:var(--accent); }
+.day-dot.done { border-color:var(--energy); background:#0a2a1a; color:var(--energy); }
+.slot-marker { display:flex; gap:3px; align-items:center; }
+.slot-dot {
+  width:8px; height:8px; border-radius:50%; background:#333; transition:all 0.3s;
+}
+.slot-dot.done { background:var(--energy); }
+.slot-dot.current { background:var(--accent); animation:pulse 0.8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ===== MAIN PANEL ===== */
+#panel {
+  width:100%; background:var(--panel); border-radius:16px; padding:24px 20px;
+  text-align:center; min-height:280px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:14px;
+  position:relative;
+}
+#panel h2 { font-size:20px; color:var(--accent); margin-bottom:4px; }
+#panel p { font-size:14px; color:var(--dim); line-height:1.6; max-width:400px; }
+#panel .info-text { color:var(--text); }
+
+.btn-group { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; width:100%; }
+button {
+  padding:14px 24px; border-radius:12px; border:none;
+  font-size:16px; font-weight:bold; cursor:pointer;
+  transition:all 0.2s; font-family:inherit;
+  position:relative; overflow:hidden;
+}
+button:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.3); }
+button:active { transform:translateY(0); }
+.btn-primary { background:var(--accent); color:#1a1a2e; }
+.btn-lib { background:#3a5a8c; color:#fff; }
+.btn-dorm { background:#6b3a8c; color:#fff; }
+.btn-study { background:var(--knowledge); color:#1a1a2e; }
+.btn-play { background:var(--energy); color:#1a1a2e; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-item { background:#2a2a4a; color:var(--accent); border:1px solid var(--accent); font-size:13px; padding:10px 16px; }
+.btn-small { font-size:13px; padding:8px 16px; }
+.btn-shop { background:var(--score); color:#fff; }
+button:disabled { opacity:0.4; cursor:not-allowed; pointer-events:none; }
+
+/* ===== CANVAS FOR MINIGAME ===== */
+#minigame-wrap {
+  width:100%; position:relative; margin:8px 0;
+}
+#minigame-canvas {
+  width:100%; border-radius:12px; background:#0d1117;
+  cursor:crosshair; touch-action:none;
+}
+#minigame-timer {
+  position:absolute; top:10px; right:14px;
+  font-size:24px; font-weight:bold; color:var(--accent);
+  background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px;
+}
+#minigame-target {
+  position:absolute; top:10px; left:14px;
+  font-size:20px; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px;
+}
+#minigame-score {
+  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  font-size:18px; font-weight:bold; color:#fff;
+  background:rgba(0,0,0,0.6); padding:4px 16px; border-radius:20px;
+}
+
+/* ===== EVENT MODAL ===== */
+.event-overlay {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.7); z-index:100;
+  display:flex; align-items:center; justify-content:center;
+  animation:fadeIn 0.3s;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.event-card {
+  background:var(--panel); border-radius:20px; padding:28px 24px;
+  max-width:420px; width:90%; text-align:center;
+  border:2px solid var(--accent);
+}
+
+/* ===== FLOATING TEXT ===== */
+.float-text {
+  position:fixed; pointer-events:none; z-index:200;
+  font-weight:bold; font-size:24px;
+  animation:floatUp 1.2s ease-out forwards;
+}
+@keyframes floatUp { 0%{opacity:1; transform:translateY(0)} 100%{opacity:0; transform:translateY(-80px)} }
+
+/* ===== SHOP ===== */
+.shop-item {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; background:#1a1a30; border-radius:12px; padding:12px 14px;
+  text-align:left; gap:10px;
+}
+.shop-item .item-icon { font-size:32px; }
+.shop-item .item-info { flex:1; }
+.shop-item .item-name { font-weight:bold; font-size:14px; color:var(--text); }
+.shop-item .item-desc { font-size:11px; color:var(--dim); }
+.shop-item .item-cost { color:var(--score); font-weight:bold; font-size:13px; white-space:nowrap; }
+
+.inv-badge {
+  display:inline-block; background:var(--accent); color:#1a1a2e;
+  border-radius:10px; padding:2px 8px; font-size:11px; font-weight:bold; margin-left:4px;
+}
+
+/* ===== RESULT ===== */
+.result-grade {
+  font-size:64px; font-weight:bold; margin:10px 0;
+}
+.result-grade.S { color:#ffd700; }
+.result-grade.A { color:var(--energy); }
+.result-grade.B { color:var(--knowledge); }
+.result-grade.C { color:var(--accent); }
+.result-grade.F { color:var(--danger); }
+
+@media (max-width:750px) {
+  #game { flex-direction:column; align-items:center; }
+  #history-sidebar { width:100%; max-width:520px; position:static; }
+}
+@media (max-width:400px) {
+  #game { padding:12px; }
+  #panel { padding:16px 12px; }
+  button { padding:12px 18px; font-size:14px; }
+}
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<script>
+// ==================== 期末冲刺！完整游戏引擎 ====================
+const MAX_STAT = 100;
+
+const S = {
+  knowledge: 0,
+  energy: 60,
+  score: 20,
+  day: 1,
+  slot: 1,
+  phase: 'TITLE',
+  location: null,
+  action: null,
+  minigameResult: 0,
+  inventory: [],
+  itemsUsedThisRun: new Set(),
+  usedEventIds: [],
+  runCount: 1,
+  totalRuns: 0,
+};
+
+// ---- 道具目录 ----
+const ITEMS = [
+  { id:'luxihe', name:'泸溪河桃酥', icon:'🥮', desc:'回复10点精力', cost:15, effect:{energy:10} },
+  { id:'tea', name:'热带风味冰红茶', icon:'🧋', desc:'本时段学习效率+15%', cost:20, effect:{studyBoost:0.15} },
+  { id:'coffee', name:'速溶咖啡', icon:'☕', desc:'精力+5，学习效率+10%', cost:20, effect:{energy:5, studyBoost:0.10} },
+  { id:'notes', name:'学霸笔记', icon:'📝', desc:'本时段知识获取+20%', cost:25, effect:{knowledgeBoost:0.20} },
+  { id:'earplugs', name:'降噪耳塞', icon:'🎧', desc:'图书馆学习额外+10%效率', cost:18, effect:{libBoost:0.10} },
+  { id:'noodles', name:'泡面', icon:'🍜', desc:'回复15点精力', cost:20, effect:{energy:15} },
+  { id:'powerbank', name:'充电宝', icon:'🔋', desc:'精力不足时减免惩罚', cost:25, effect:{energyShield:true} },
+  { id:'energydrink', name:'能量饮料', icon:'💊', desc:'回复25点精力', cost:30, effect:{energy:25} },
+  { id:'pillow', name:'优质睡眠枕', icon:'🛌', desc:'精力+20，本时段学习精力消耗减半', cost:35, effect:{energy:20, energySave:0.50} },
+  { id:'pomodoro', name:'番茄钟APP', icon:'📱', desc:'本时段学习效率+25%，精力消耗-3', cost:40, effect:{studyBoost:0.25, energySaveFlat:3} },
+  { id:'exam', name:'历年真题', icon:'🏆', desc:'本时段知识获取+40%', cost:50, effect:{knowledgeBoost:0.40} },
+  { id:'npy', name:'伴侣', icon:'💕', desc:'本轮全时段学习+25%、娱乐+20%', cost:60, effect:{allRunStudyBoost:0.25, allRunPlayBoost:0.20} },
+];
+
+// ---- 随机事件池（14个事件，各50%概率两种走向）----
+const EVENTS = [
+  {
+    id:'senior', title:'学姐申请加QQ好友',
+    desc:'一位自称是你直系学姐的人发来QQ好友申请，头像是个漂亮女生...',
+    choices:['同意', '拒绝'],
+    truthA:{ name:'学姐真心想帮', desc:'学姐想给你发复习资料！', outcomes:['知识+8','无变化'] },
+    truthB:{ name:'学姐是骗子', desc:'学姐通过裸聊试图骗钱！', outcomes:['知识-5，精力-5','精力+3（识破骗局）'] },
+    applyA:[{k:8},{k:0}], applyB:[{k:-5,e:-5},{e:3}],
+  },
+  {
+    id:'coupon', title:'外卖APP推送优惠券',
+    desc:'你常点的外卖店推送了一张"满20减15"的大额优惠券！',
+    choices:['领取', '忽略'],
+    truthA:{ name:'真优惠', desc:'这张券真的能用，吃顿好的！', outcomes:['精力+5','无变化'] },
+    truthB:{ name:'过期券', desc:'优惠券已经过期了...', outcomes:['精力-3（吃坏肚子）','无变化'] },
+    applyA:[{e:5},{k:0}], applyB:[{e:-3},{k:0}],
+  },
+  {
+    id:'roommate', title:'室友邀请开黑',
+    desc:'室友热情邀请你一起打游戏："就一把，放松一下嘛！"',
+    choices:['同意开黑', '拒绝'],
+    truthA:{ name:'真心放松', desc:'打一局确实解压！', outcomes:['精力+8，知识-3','知识+2'] },
+    truthB:{ name:'想抄作业', desc:'室友其实想借你的作业抄！', outcomes:['知识-5（被白嫖）','知识+2，精力+2'] },
+    applyA:[{e:8,k:-3},{k:2}], applyB:[{k:-5},{k:2,e:2}],
+  },
+  {
+    id:'teacher', title:'老师在群里发消息',
+    desc:'期末课程群里，老师突然发了一条长消息，看起来很重要...',
+    choices:['仔细阅读', '先不管'],
+    truthA:{ name:'划重点！', desc:'老师画了考试重点范围！', outcomes:['知识+8','无变化'] },
+    truthB:{ name:'扩大范围', desc:'老师通知考试范围扩大了...', outcomes:['精力-3（焦虑）','无变化'] },
+    applyA:[{k:8},{k:0}], applyB:[{e:-3},{k:0}],
+  },
+  {
+    id:'seat', title:'图书馆占座风波',
+    desc:'你发现一个"看起来没人"的座位，但桌上放着一本书...',
+    choices:['占这个座', '另找座位'],
+    truthA:{ name:'真没人', desc:'这个人已经走了，座位可以坐', outcomes:['知识+3','无变化'] },
+    truthB:{ name:'人在呢', desc:'座位主人很快就回来了！', outcomes:['精力-5（被赶走）','精力+2'] },
+    applyA:[{k:3},{k:0}], applyB:[{e:-5},{e:2}],
+  },
+  {
+    id:'milktea', title:'奶茶店买一送一',
+    desc:'学校门口的奶茶店推出"期末限定买一送一"活动！',
+    choices:['去买奶茶', '不去'],
+    truthA:{ name:'真的优惠', desc:'排队不长，很快就喝到了！', outcomes:['精力+5','无变化'] },
+    truthB:{ name:'排队巨长', desc:'队伍排了50米...', outcomes:['精力-5（浪费时间）','知识+2'] },
+    applyA:[{e:5},{k:0}], applyB:[{e:-5},{k:2}],
+  },
+  {
+    id:'secret', title:'发现"绝密"复习资料',
+    desc:'你在网上冲浪时发现一个帖子，标题是"期末绝密复习资料.rar"...',
+    choices:['下载查看', '无视'],
+    truthA:{ name:'真的是重点', desc:'资料里整理了核心知识点！', outcomes:['知识+10','无变化'] },
+    truthB:{ name:'病毒文件', desc:'下载后电脑中毒了！', outcomes:['知识-3，精力-3','精力+2'] },
+    applyA:[{k:10},{k:0}], applyB:[{k:-3,e:-3},{e:2}],
+  },
+  {
+    id:'nightowl', title:'室友还在挑灯夜战',
+    desc:'室友的台灯还亮着，隐约能听到翻书声...',
+    choices:['加入学习', '睡觉休息'],
+    truthA:{ name:'室友真在学', desc:'室友这次是真的在用功！', outcomes:['知识+6，精力-3','精力+5'] },
+    truthB:{ name:'室友在看剧', desc:'走近一看，原来是在刷剧...', outcomes:['精力-3（被骗）','精力+5'] },
+    applyA:[{k:6,e:-3},{e:5}], applyB:[{e:-3},{e:5}],
+  },
+  {
+    id:'broadcast', title:'校园广播寻物启事',
+    desc:'广播站正在播报：有同学在图书馆捡到一个钱包，失主说归还必有重谢...',
+    choices:['去认领', '不理会'],
+    truthA:{ name:'真的是你的', desc:'钱包里正是你上周丢的学生卡！', outcomes:['精力+3（找回失物）','无变化'] },
+    truthB:{ name:'不是你的', desc:'认领后发现根本不是你的钱包...', outcomes:['精力-3（尴尬）','无变化'] },
+    applyA:[{e:3},{k:0}], applyB:[{e:-3},{k:0}],
+  },
+  {
+    id:'change', title:'打印店老板多找了钱',
+    desc:'你打印完资料付了10块，老板却找了你30块，明显多找了20...',
+    choices:['归还多余的钱', '默默收下'],
+    truthA:{ name:'老板真算错了', desc:'老板感激你的诚实！', outcomes:['知识+3（心安理得）','知识-2（心虚）'] },
+    truthB:{ name:'老板在试探', desc:'老板故意多找钱考验学生诚信...', outcomes:['知识+5（通过考验）','知识-3，精力-3'] },
+    applyA:[{k:3},{k:-2}], applyB:[{k:5},{k:-3,e:-3}],
+  },
+  {
+    id:'rollcall', title:'选修课突然点名',
+    desc:'同学群里炸了：据说今天的选修课老师突然要点名！',
+    choices:['赶去上课', '算了不去了'],
+    truthA:{ name:'真的点名了', desc:'老师真的点名了，去了的人逃过一劫', outcomes:['无变化','知识-3（缺勤记录）'] },
+    truthB:{ name:'假消息', desc:'群里在开玩笑，根本没点名...', outcomes:['精力-3（白跑一趟）','无变化'] },
+    applyA:[{k:0},{k:-3}], applyB:[{e:-3},{k:0}],
+  },
+  {
+    id:'ac', title:'图书馆空调坏了',
+    desc:'你刚到图书馆坐下，就听说中央空调坏了，室温开始上升...',
+    choices:['坚持留下', '换个地方'],
+    truthA:{ name:'很快就修好', desc:'物业10分钟就修好了', outcomes:['知识+3','无变化'] },
+    truthB:{ name:'今天修不好', desc:'估计要到明天才能修好...', outcomes:['精力-5（闷热难耐）','精力+2（明智）'] },
+    applyA:[{k:3},{k:0}], applyB:[{e:-5},{e:2}],
+  },
+  {
+    id:'note', title:'收到匿名鼓励纸条',
+    desc:'你在常坐的位置上发现一张纸条，写着"期末加油！你一定可以的 ✨"',
+    choices:['回应一下', '无视'],
+    truthA:{ name:'暗恋你的人', desc:'隔壁班暗恋你的同学放的，回应后收到了更多鼓励', outcomes:['精力+5','无变化'] },
+    truthB:{ name:'放错位置了', desc:'纸条是给别人放的，认错人了...', outcomes:['精力-3（尴尬）','无变化'] },
+    applyA:[{e:5},{k:0}], applyB:[{e:-3},{k:0}],
+  },
+  {
+    id:'classroom', title:'发现空的自习室',
+    desc:'有人告诉你教学楼顶楼有间教室空调好又没人，简直是自习圣地...',
+    choices:['去看看', '不折腾了'],
+    truthA:{ name:'真的有', desc:'确实有一间空教室，环境超好！', outcomes:['知识+5，精力-2','无变化'] },
+    truthB:{ name:'早就被占了', desc:'到了发现已经被人占满了...', outcomes:['精力-3（白跑）','知识+2（省下时间）'] },
+    applyA:[{k:5,e:-2},{k:0}], applyB:[{e:-3},{k:2}],
+  },
+];
+
+// ---- 工具函数 ----
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function rng(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+function modStat(which, delta) {
+  const old = S[which];
+  S[which] = clamp(S[which] + delta, 0, MAX_STAT);
+  return S[which] - old;
+}
+
+// ---- 持久化 ----
+function saveInventory() {
+  const data = S.inventory.map(i=>({id:i.id, used:false}));
+  localStorage.setItem('finals_inv', JSON.stringify(data));
+  localStorage.setItem('finals_runs', S.totalRuns);
+}
+function loadInventory() {
+  try {
+    const raw = localStorage.getItem('finals_inv');
+    if (raw) {
+      const data = JSON.parse(raw);
+      S.inventory = data.map(d=>{
+        const tpl = ITEMS.find(it=>it.id===d.id);
+        return tpl ? {...tpl, usedThisRun:false} : null;
+      }).filter(Boolean);
+    }
+    S.totalRuns = parseInt(localStorage.getItem('finals_runs')||'0');
+  } catch(e) { S.inventory = []; S.totalRuns = 0; }
+}
+
+// ---- 历史记录 ----
+function loadScoreHistory() {
+  try { const raw = localStorage.getItem('finals_history'); return raw ? JSON.parse(raw) : []; }
+  catch(e) { return []; }
+}
+function saveScoreHistory(entry) {
+  const history = loadScoreHistory();
+  history.push(entry);
+  localStorage.setItem('finals_history', JSON.stringify(history));
+}
+function renderHistorySidebar() {
+  const history = loadScoreHistory();
+  let html = '<div id="history-sidebar"><h3>📈 冲刺记录</h3>';
+  if (history.length === 0) {
+    html += '<div class="history-empty">暂无记录<br>完成一轮后自动记录</div>';
+  } else {
+    html += '<table id="history-table"><tr><th>#</th><th>成绩</th><th>评级</th></tr>';
+    history.forEach(h => { html += `<tr><td>${h.run}</td><td style="color:var(--score)">${h.score}</td><td>${h.grade}</td></tr>`; });
+    html += '</table><canvas id="history-chart" width="208" height="150"></canvas>';
+  }
+  html += '</div>';
+  setTimeout(() => { if (history.length > 0) drawHistoryChart(history); }, 50);
+  return html;
+}
+function drawHistoryChart(history) {
+  const canvas = document.getElementById('history-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = {top:15, right:18, bottom:22, left:30};
+  const pw = W - pad.left - pad.right, ph = H - pad.top - pad.bottom;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#1a2530'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) { const y = pad.top + ph * i / 4; ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W-pad.right, y); ctx.stroke(); }
+  ctx.setLineDash([3, 3]);
+  [{v:60,c:'#f72585',l:'及格'},{v:80,c:'#06d6a0',l:'良好'},{v:95,c:'#ffd700',l:'优秀'}].forEach(t => {
+    const y = pad.top + ph * (1 - t.v/100);
+    ctx.strokeStyle = t.c; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W-pad.right, y); ctx.stroke();
+    ctx.fillStyle = t.c; ctx.font = '9px sans-serif'; ctx.fillText(t.l, W-pad.right+2, y+4);
+  });
+  ctx.setLineDash([]);
+  const maxRun = Math.max(history.length, 2);
+  const pts = history.map((h, i) => ({ x: pad.left + pw * i / Math.max(maxRun-1, 1), y: pad.top + ph * (1 - h.score/100) }));
+  if (pts.length > 1) {
+    ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+  }
+  pts.forEach(p => { ctx.fillStyle = '#4cc9f0'; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); });
+  ctx.fillStyle = '#888'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  history.forEach((h, i) => { ctx.fillText(h.run, pad.left + pw * i / Math.max(maxRun-1, 1), H - 5); });
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) { ctx.fillText(Math.round(100 - i*25), pad.left-6, pad.top + ph*i/4 + 3); }
+}
+
+// ==================== RENDER ====================
+const $game = document.getElementById('game');
+
+function renderStats() {
+  return `
+    <div id="stats-bar">
+      <div class="stat-card knowledge">
+        <div class="icon">📚</div><div class="label">学识</div>
+        <div class="value">${S.knowledge}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${S.knowledge}%"></div></div>
+      </div>
+      <div class="stat-card energy">
+        <div class="icon">⚡</div><div class="label">精力</div>
+        <div class="value">${S.energy}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${S.energy}%"></div></div>
+      </div>
+      <div class="stat-card score">
+        <div class="icon">🎯</div><div class="label">成绩</div>
+        <div class="value">${S.score}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${S.score}%"></div></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDayIndicator() {
+  let html = '<div id="day-indicator">';
+  for (let d=1; d<=3; d++) {
+    let cls = '';
+    if (d < S.day) cls = 'done';
+    else if (d === S.day) cls = 'active';
+    html += `<div class="day-dot ${cls}">D${d}</div>`;
+    if (d < 3) {
+      html += '<div class="slot-marker">';
+      for (let s=1; s<=3; s++) {
+        let scls = '';
+        if (d < S.day || (d===S.day && s<S.slot)) scls='done';
+        else if (d===S.day && s===S.slot) scls='current';
+        html += `<div class="slot-dot ${scls}"></div>`;
+      }
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderPanel(title, bodyHtml) {
+  let html = '<div id="main-col">';
+  html += renderStats() + renderDayIndicator();
+  html += `<div id="panel"><h2>${title}</h2>${bodyHtml}</div>`;
+  html += '</div>';
+  html += renderHistorySidebar();
+  $game.innerHTML = html;
+}
+
+function btn(id, text, cls='btn-primary') {
+  return `<button class="${cls}" onclick="handleClick('${id}')">${text}</button>`;
+}
+
+let pendingCallback = null;
+function handleClick(id) {
+  if (pendingCallback) pendingCallback(id);
+}
+
+// ---- 浮动文字特效 ----
+function floatText(x, y, text, color) {
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = text;
+  el.style.left = x+'px'; el.style.top = y+'px';
+  el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1200);
+}
+
+// ==================== 道具使用 ====================
+let _flashMsg = null;
+
+function hasItemEffect(effKey) {
+  for (const itemId of S.itemsUsedThisRun) {
+    const item = S.inventory.find(i=>i.id===itemId);
+    if (item && item.effect[effKey]) return true;
+  }
+  return false;
+}
+
+function getActiveBoosts() {
+  let studyBoost = 0, knowledgeBoost = 0, playBoost = 0, energySave = 0, energySaveFlat = 0;
+  for (const itemId of S.itemsUsedThisRun) {
+    const item = S.inventory.find(i=>i.id===itemId);
+    if (!item) continue;
+    if (item.effect.studyBoost) studyBoost += item.effect.studyBoost;
+    if (item.effect.knowledgeBoost) knowledgeBoost += item.effect.knowledgeBoost;
+    if (item.effect.playBoost) playBoost += item.effect.playBoost;
+    if (item.effect.allRunStudyBoost) studyBoost += item.effect.allRunStudyBoost;
+    if (item.effect.allRunPlayBoost) playBoost += item.effect.allRunPlayBoost;
+    if (item.effect.energySave) energySave += item.effect.energySave;
+    if (item.effect.energySaveFlat) energySaveFlat += item.effect.energySaveFlat;
+  }
+  return { studyBoost, knowledgeBoost, playBoost, energySave, energySaveFlat };
+}
+
+function getLibBoost() {
+  let boost = 0;
+  if (S.location==='library' && hasItemEffect('libBoost')) boost += 0.10;
+  return boost;
+}
+
+function renderBoostBadge() {
+  if (S.itemsUsedThisRun.size === 0) return '';
+  const boosts = getActiveBoosts();
+  let parts = [];
+  if (boosts.studyBoost > 0) parts.push(`学习+${Math.round(boosts.studyBoost*100)}%`);
+  if (boosts.knowledgeBoost > 0) parts.push(`知识+${Math.round(boosts.knowledgeBoost*100)}%`);
+  if (boosts.playBoost > 0) parts.push(`娱乐+${Math.round(boosts.playBoost*100)}%`);
+  if (boosts.energySave > 0) parts.push(`省精${Math.round(boosts.energySave*100)}%`);
+  if (boosts.energySaveFlat > 0) parts.push(`省精${boosts.energySaveFlat}`);
+  if (parts.length === 0) return '';
+  return `<p style="color:var(--energy);font-size:12px;margin-top:4px;">⚡ 当前增益：${parts.join(' · ')}</p>`;
+}
+
+function useItem(itemId) {
+  const item = S.inventory.find(i=>i.id===itemId && !i.usedThisRun);
+  if (!item) return;
+  item.usedThisRun = true;
+  S.itemsUsedThisRun.add(itemId);
+  if (item.effect.energy) modStat('energy', item.effect.energy);
+  let msg = `使用了 ${item.icon} ${item.name}！`;
+  if (item.effect.energy) msg += ` 精力+${item.effect.energy}`;
+  const hasBoost = item.effect.studyBoost || item.effect.knowledgeBoost || item.effect.libBoost || item.effect.allRunStudyBoost || item.effect.allRunPlayBoost || item.effect.playBoost || item.effect.energySave || item.effect.energySaveFlat;
+  if (hasBoost) msg += '（增益已激活，持续到本轮结束）';
+  _flashMsg = msg;
+}
+
+// ==================== PHASE: TITLE ====================
+function phaseTitle() {
+  loadInventory();
+  S.totalRuns++;
+  S.runCount = S.totalRuns;
+  S.knowledge = 0; S.energy = 60; S.score = 20;
+  S.day = 1; S.slot = 1; S.phase = 'TITLE';
+  S.itemsUsedThisRun = new Set();
+  S.usedEventIds = [];
+  S.inventory.forEach(i=>i.usedThisRun=false);
+
+  const invHtml = S.inventory.length > 0
+    ? `<p style="color:var(--accent);margin-top:8px;">🎒 携带道具：${S.inventory.map(i=>i.icon).join(' ')}</p>`
+    : '';
+  const runInfo = S.totalRuns > 0
+    ? `<p style="color:var(--dim);">第 ${S.runCount} 次冲刺</p>`
+    : '<p style="color:var(--dim);">新手提示：合理分配精力，成绩60+才算及格哦</p>';
+
+  renderPanel('🎓 期末冲刺！',
+    `<p class="info-text">大学生期末周肉鸽模拟器</p>
+     <p style="font-size:13px;color:var(--dim);">3天倒计时 · 9个时段 · 在图书馆与宿舍间做出选择</p>
+     <p style="font-size:13px;color:var(--dim);">选择学习或娱乐后，进入10秒emoji点击小游戏</p>
+     ${runInfo}
+     ${invHtml}
+     <div class="btn-group">${btn('start','开始冲刺！💪','btn-primary')}</div>
+     ${S.inventory.length>0 ? `<div class="btn-group">${btn('reset','清除存档 🔄','btn-danger btn-small')}</div>` : ''}`
+  );
+
+  pendingCallback = (id) => {
+    if (id === 'start') { S.phase='CHOOSE_LOCATION'; phaseChooseLocation(); }
+    if (id === 'reset') { localStorage.clear(); S.inventory=[]; S.totalRuns=0; phaseTitle(); }
+  };
+}
+
+// ==================== PHASE: CHOOSE LOCATION ====================
+function phaseChooseLocation() {
+  const timeNames = ['上午','下午','晚上'];
+  const timeIcons = ['🌅','☀️','🌙'];
+  const slotIdx = S.slot - 1;
+
+  let itemBtns = '';
+  if (S.inventory.length > 0) {
+    const available = S.inventory.filter(i=>!i.usedThisRun);
+    if (available.length > 0) {
+      itemBtns = '<div class="btn-group" style="margin-top:4px;">';
+      available.forEach(item => {
+        itemBtns += `<button class="btn-item" onclick="handleClick('use_${item.id}')">${item.icon} 使用${item.name}</button>`;
+      });
+      itemBtns += '</div>';
+    }
+  }
+
+  renderPanel(`第${S.day}天 · ${timeIcons[slotIdx]} ${timeNames[slotIdx]}`,
+    `<p class="info-text">选择一个地点：</p>
+     <div class="btn-group">
+       ${btn('loc_lib','📚 去图书馆','btn-lib')}
+       ${btn('loc_dorm','🏠 回宿舍','btn-dorm')}
+     </div>
+     ${itemBtns}
+     ${renderBoostBadge()}
+     <p style="font-size:12px;color:var(--dim);">提示：不同时间不同地点做不同事效果不同</p>`
+  );
+
+  pendingCallback = (id) => {
+    if (id === 'loc_lib') { S.location='library'; S.phase='CHOOSE_ACTION'; phaseChooseAction(); }
+    if (id === 'loc_dorm') { S.location='dorm'; S.phase='CHOOSE_ACTION'; phaseChooseAction(); }
+    if (id.startsWith('use_')) { useItem(id.replace('use_','')); phaseChooseLocation(); }
+  };
+}
+
+// ==================== PHASE: CHOOSE ACTION ====================
+function phaseChooseAction() {
+  const locName = S.location==='library'?'图书馆':'宿舍';
+  const locIcon = S.location==='library'?'📚':'🏠';
+
+  let warn = '';
+  if (S.energy < 15) {
+    warn = '<p style="color:var(--danger);font-size:13px;">⚠️ 精力严重不足！此时学习效率将大幅下降</p>';
+  } else if (S.energy < 30) {
+    warn = '<p style="color:var(--accent);font-size:13px;">⚡ 精力偏低，学习效率可能受影响</p>';
+  }
+
+  let flashHtml = '';
+  if (_flashMsg) {
+    flashHtml = `<p style="color:var(--energy);font-size:13px;">${_flashMsg}</p>`;
+    _flashMsg = null;
+  }
+
+  let libHint = '';
+  if (S.location==='library') {
+    const boost = getLibBoost();
+    if (boost > 0) libHint = `<p style="color:var(--knowledge);font-size:12px;">📚 图书馆氛围：学习效率+${Math.round(boost*100)}%</p>`;
+  }
+
+  renderPanel(`${locIcon} 在${locName}`,
+    `<p class="info-text">你要做什么？</p>
+     ${flashHtml}
+     <div class="btn-group">
+       ${btn('act_study','✏️ 学习','btn-study')}
+       ${btn('act_play','🎮 娱乐','btn-play')}
+     </div>
+     ${libHint}
+     ${renderBoostBadge()}
+     ${warn}`
+  );
+
+  pendingCallback = (id) => {
+    if (id === 'act_study') { S.action='study'; S.phase='MINIGAME'; phaseMinigame(); }
+    if (id === 'act_play') { S.action='play'; S.phase='MINIGAME'; phaseMinigame(); }
+  };
+}
+
+// ==================== PHASE: MINIGAME (10秒点击emoji) ====================
+let mgState = null;
+
+function phaseMinigame() {
+  const actionName = S.action==='study'?'学习':'娱乐';
+  const studyPool = ['📚','✏️','📖','🖊️','📝','💻','📐','🔬'];
+  const playPool = ['🎮','🎬','🛏️','📱','🎵','🍿','🎧','💤'];
+  const targetPool = S.action==='study'?studyPool:playPool;
+  const distractorPool = S.action==='study'?playPool:studyPool;
+  const targetShow = S.action==='study'?'📚✏️📖🖊️📝💻📐🔬':'🎮🎬🛏️📱🎵🍿🎧💤';
+
+  let desc = S.action==='study'
+    ? `<p>点击 <b>学习emoji</b> 获取学识，避开 <b>娱乐emoji</b>！</p>`
+    : `<p>点击 <b>娱乐emoji</b> 获取精力，避开 <b>学习emoji</b>！</p>`;
+
+  renderPanel(`⏱️ ${actionName}中...`,
+    `${desc}
+     <div id="minigame-wrap">
+       <canvas id="minigame-canvas" width="460" height="400"></canvas>
+       <div id="minigame-timer">10</div>
+       <div id="minigame-target">${targetShow}</div>
+       <div id="minigame-score">得分：0</div>
+     </div>
+     <p style="font-size:12px;color:var(--dim);">10秒倒计时！快速点击正确的emoji，点错扣分</p>`
+  );
+
+  setTimeout(()=>startMinigame(targetPool, distractorPool), 500);
+}
+
+function startMinigame(targetPool, distractorPool) {
+  const canvas = document.getElementById('minigame-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const wrap = document.getElementById('minigame-wrap');
+  if (wrap) {
+    const w = Math.min(wrap.clientWidth, 460);
+    if (w < 460) { canvas.style.width=w+'px'; canvas.style.height=(w*400/460)+'px'; }
+  }
+
+  mgState = {
+    canvas, ctx, W, H,
+    targetPool, distractorPool,
+    emojis: [],
+    score: 0,
+    timeLeft: 10,
+    spawnTimer: 0,
+    spawnInterval: 0.18,
+    running: true,
+    lastTime: performance.now(),
+  };
+
+  canvas.addEventListener('click', onMinigameClick);
+  canvas.addEventListener('touchstart', onMinigameTouch, {passive:false});
+  requestAnimationFrame(mgLoop);
+}
+
+function onMinigameClick(e) {
+  if (!mgState || !mgState.running) return;
+  const rect = mgState.canvas.getBoundingClientRect();
+  const scaleX = mgState.W / rect.width;
+  const scaleY = mgState.H / rect.height;
+  checkEmojiHit((e.clientX-rect.left)*scaleX, (e.clientY-rect.top)*scaleY, e.clientX, e.clientY);
+}
+
+function onMinigameTouch(e) {
+  if (!mgState || !mgState.running) return;
+  e.preventDefault();
+  const rect = mgState.canvas.getBoundingClientRect();
+  const scaleX = mgState.W / rect.width;
+  const scaleY = mgState.H / rect.height;
+  for (const touch of e.changedTouches) {
+    checkEmojiHit((touch.clientX-rect.left)*scaleX, (touch.clientY-rect.top)*scaleY, touch.clientX, touch.clientY);
+  }
+}
+
+function checkEmojiHit(cx, cy, screenX, screenY) {
+  for (let i = mgState.emojis.length-1; i >= 0; i--) {
+    const em = mgState.emojis[i];
+    if (em.hit) continue;
+    const dx = cx - em.x, dy = cy - em.y;
+    if (Math.sqrt(dx*dx+dy*dy) < em.radius) {
+      if (em.type === 'target') {
+        mgState.score++;
+        floatText(screenX, screenY, '+1', '#06d6a0');
+      } else {
+        mgState.score--;
+        floatText(screenX, screenY, '-1', '#ef476f');
+      }
+      em.hit = true;
+      em.burstTime = 0.25;
+      return;
+    }
+  }
+}
+
+function mgLoop(timestamp) {
+  if (!mgState || !mgState.running) return;
+  const s = mgState;
+  const dt = Math.min((timestamp - s.lastTime) / 1000, 0.1);
+  s.lastTime = timestamp;
+
+  s.timeLeft -= dt;
+  if (s.timeLeft <= 0) { s.timeLeft = 0; endMinigame(); return; }
+
+  // Spawn emojis — fast pace for 10-second game
+  s.spawnTimer += dt;
+  const rate = 0.15 + (10 - s.timeLeft) * 0.025; // speeds up
+  if (s.spawnTimer >= rate) {
+    s.spawnTimer -= rate;
+    const isTarget = Math.random() < 0.55;
+    const pool = isTarget?s.targetPool:s.distractorPool;
+    s.emojis.push({
+      type: isTarget?'target':'distractor',
+      emoji: pool[Math.floor(Math.random()*pool.length)],
+      x: 30 + Math.random()*(s.W-60),
+      y: -30,
+      speed: 100 + Math.random()*130,
+      radius: 28,
+      hit: false,
+      burstTime: 0,
+    });
+  }
+
+  // Update
+  for (const em of s.emojis) {
+    if (em.hit) { em.burstTime -= dt; em.radius += dt*100; }
+    else { em.y += em.speed * dt; }
+  }
+  s.emojis = s.emojis.filter(em => em.hit ? em.burstTime>0 : em.y < s.H+50);
+
+  // Draw
+  const ctx = s.ctx;
+  ctx.clearRect(0,0,s.W,s.H);
+  ctx.strokeStyle='#1a2530'; ctx.lineWidth=0.5;
+  for (let gx=0;gx<s.W;gx+=30){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,s.H);ctx.stroke();}
+  for (let gy=0;gy<s.H;gy+=30){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(s.W,gy);ctx.stroke();}
+
+  for (const em of s.emojis) {
+    ctx.save();
+    ctx.globalAlpha = em.hit ? Math.max(0,em.burstTime/0.25) : 0.9;
+    ctx.font = `${em.radius*1.1}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(em.emoji, em.x, em.y);
+    ctx.restore();
+  }
+
+  document.getElementById('minigame-timer').textContent = Math.ceil(s.timeLeft);
+  document.getElementById('minigame-score').textContent = `得分：${s.score}`;
+
+  requestAnimationFrame(mgLoop);
+}
+
+function endMinigame() {
+  mgState.running = false;
+  mgState.canvas.removeEventListener('click', onMinigameClick);
+  mgState.canvas.removeEventListener('touchstart', onMinigameTouch);
+  S.minigameResult = mgState.score;
+
+  const slotIdx = S.slot - 1;
+  const isMorning = slotIdx === 0;
+  const isAfternoon = slotIdx === 1;
+  const isEvening = slotIdx === 2;
+  const isLibrary = S.location === 'library';
+
+  const boosts = getActiveBoosts();
+  const libBoost = getLibBoost();
+
+  let knowledgeDelta = 0, energyDelta = 0;
+
+  if (S.action === 'study') {
+    // 时间影响学习效率（隐藏机制）
+    if (isMorning) knowledgeDelta = rng(4, 6);
+    else if (isAfternoon) knowledgeDelta = rng(3, 5);
+    else knowledgeDelta = rng(2, 4);
+
+    if (isLibrary) knowledgeDelta = Math.round(knowledgeDelta * (1.1 + libBoost));
+    knowledgeDelta = Math.round(knowledgeDelta * (1 + boosts.studyBoost + boosts.knowledgeBoost));
+    // 边际效应：小游戏分数开根号，20次和40次差距大，100次和200次差距小
+    const mgSignK = Math.sign(S.minigameResult);
+    const mgEffK = mgSignK * Math.round(2.5 * Math.sqrt(Math.abs(S.minigameResult)));
+    knowledgeDelta += mgEffK;
+
+    if (isMorning) energyDelta = rng(-10, -13);
+    else if (isAfternoon) energyDelta = rng(-13, -16);
+    else energyDelta = rng(-15, -19);
+    // 道具减免精力消耗
+    if (boosts.energySave > 0) energyDelta = Math.round(energyDelta * (1 - Math.min(boosts.energySave, 0.8)));
+    if (boosts.energySaveFlat > 0) energyDelta = Math.min(0, energyDelta + boosts.energySaveFlat);
+
+    // 低精力惩罚
+    if (S.energy < 15 && !hasItemEffect('energyShield')) {
+      knowledgeDelta = Math.round(knowledgeDelta * 0.4);
+    } else if (S.energy < 30 && !hasItemEffect('energyShield')) {
+      knowledgeDelta = Math.round(knowledgeDelta * 0.7);
+    }
+  } else {
+    // 娱乐 — 晚上效率最高（隐藏机制）
+    if (isMorning) energyDelta = rng(3, 5);
+    else if (isAfternoon) energyDelta = rng(4, 7);
+    else energyDelta = rng(5, 8);
+
+    if (!isLibrary) energyDelta = Math.round(energyDelta * 1.15);
+    if (boosts.playBoost > 0) energyDelta = Math.round(energyDelta * (1 + boosts.playBoost));
+    const mgSignE = Math.sign(S.minigameResult);
+    const mgEffE = mgSignE * Math.round(2.5 * Math.sqrt(Math.abs(S.minigameResult)));
+    energyDelta += mgEffE;
+    knowledgeDelta = isEvening ? rng(-1, 0) : rng(-2, 0);
+  }
+
+  const actualK = modStat('knowledge', knowledgeDelta);
+  const actualE = modStat('energy', energyDelta);
+
+  // 成绩更新
+  const scoreGain = Math.round(Math.max(0, actualK) * 0.55 + Math.max(0, actualE) * 0.20);
+  modStat('score', scoreGain);
+
+  showMinigameResult(actualK, actualE, scoreGain);
+}
+
+function showMinigameResult(knowledgeDelta, energyDelta, scoreGain) {
+  let resultHtml = S.action==='study' ? '<p class="info-text">📚 学习结束！</p>' : '<p class="info-text">🎮 娱乐结束！</p>';
+  resultHtml += `<p>小游戏得分：<b>${S.minigameResult}</b></p>`;
+
+  if (knowledgeDelta !== 0) {
+    const c = knowledgeDelta>0?'var(--knowledge)':'var(--danger)';
+    resultHtml += `<p style="color:${c}">学识 ${knowledgeDelta>0?'+':''}${knowledgeDelta}</p>`;
+  }
+  if (energyDelta !== 0) {
+    const c = energyDelta>0?'var(--energy)':'var(--danger)';
+    resultHtml += `<p style="color:${c}">精力 ${energyDelta>0?'+':''}${energyDelta}</p>`;
+  }
+  if (scoreGain > 0) resultHtml += `<p style="color:var(--score)">成绩 +${scoreGain}</p>`;
+
+  // 特殊加成（60%概率触发，根据地点+行动组合）
+  let bonusText = '';
+  if (Math.random() < 0.6) {
+    if (S.location==='library' && S.action==='study') {
+      modStat('knowledge', 3); bonusText = '📚 专注力爆发！学识+3';
+    } else if (S.location==='library' && S.action==='play') {
+      modStat('energy', 5); bonusText = '😈 罪恶的快感！精力+5';
+    } else if (S.location==='dorm' && S.action==='study') {
+      modStat('knowledge', 2); bonusText = '💪 逆境中坚持！学识+2';
+    } else if (S.location==='dorm' && S.action==='play') {
+      modStat('energy', 3); bonusText = '😴 彻底放松~精力+3';
+    }
+  }
+  if (bonusText) resultHtml += `<p style="color:var(--accent);font-size:14px;">✨ ${bonusText}</p>`;
+
+  if (S.energy <= 5) resultHtml += `<p style="color:var(--danger);margin-top:8px;">😵 精力见底了！你需要休息！</p>`;
+
+  resultHtml += `<div class="btn-group" style="margin-top:8px;">${btn('continue','继续','btn-primary')}</div>`;
+  renderPanel('📊 时段结算', resultHtml);
+
+  pendingCallback = (id) => {
+    if (id === 'continue') {
+      if (Math.random() < 0.70 && S.slot <= 3 && S.day <= 3) {
+        S.phase = 'EVENT'; phaseRandomEvent();
+      } else {
+        advanceSlot();
+      }
+    }
+  };
+}
+
+// ==================== PHASE: RANDOM EVENT ====================
+let currentEvent = null, eventTruthIsA = null;
+
+function phaseRandomEvent() {
+  const available = EVENTS.filter(e => !S.usedEventIds.includes(e.id));
+  if (available.length === 0) { advanceSlot(); return; }
+  currentEvent = pick(available);
+  S.usedEventIds.push(currentEvent.id);
+  eventTruthIsA = Math.random() < 0.5;
+
+  const choicesHtml = currentEvent.choices.map((c,i)=>
+    `<button class="btn-primary" style="margin:4px;" onclick="handleClick('choice_${i}')">${c}</button>`
+  ).join('');
+
+  renderPanel('🎲 偶然事件！',
+    `<h3 style="color:var(--accent);">${currentEvent.title}</h3>
+     <p class="info-text">${currentEvent.desc}</p>
+     <p style="color:var(--dim);font-size:12px;">（事件走向未知，凭直觉选择）</p>
+     <div class="btn-group">${choicesHtml}</div>`
+  );
+
+  pendingCallback = (id) => {
+    if (id.startsWith('choice_')) {
+      resolveEvent(parseInt(id.replace('choice_','')));
+    }
+  };
+}
+
+function resolveEvent(choiceIdx) {
+  const truth = eventTruthIsA ? currentEvent.truthA : currentEvent.truthB;
+  const outcomeDesc = truth.outcomes[choiceIdx];
+  const apply = eventTruthIsA ? currentEvent.applyA[choiceIdx] : currentEvent.applyB[choiceIdx];
+
+  let changesHtml = '';
+  if (apply.k) {
+    const actual = modStat('knowledge', apply.k);
+    changesHtml += `<p style="color:${actual>=0?'var(--knowledge)':'var(--danger)'}">学识 ${actual>0?'+':''}${actual}</p>`;
+    if (actual > 0) {
+      const sg = Math.round(actual * 0.50);
+      modStat('score', sg);
+      if (sg>0) changesHtml += `<p style="color:var(--score);font-size:12px;">成绩 +${sg}</p>`;
+    }
+  }
+  if (apply.e) {
+    const actual = modStat('energy', apply.e);
+    changesHtml += `<p style="color:${actual>=0?'var(--energy)':'var(--danger)'}">精力 ${actual>0?'+':''}${actual}</p>`;
+  }
+  if (!apply.k && !apply.e) changesHtml = '<p>数值无变化</p>';
+
+  renderPanel('🎲 事件结果',
+    `<p style="color:var(--accent);">${currentEvent.title}</p>
+     <p style="font-size:13px;color:var(--dim);">真相：${truth.name} — ${truth.desc}</p>
+     <p style="font-weight:bold;margin:8px 0;color:var(--text);">你的选择：${currentEvent.choices[choiceIdx]} → ${outcomeDesc}</p>
+     ${changesHtml}
+     <div class="btn-group" style="margin-top:8px;">${btn('ev_ok','继续','btn-primary')}</div>`
+  );
+
+  pendingCallback = (id) => { if (id === 'ev_ok') advanceSlot(); };
+}
+
+// ==================== ADVANCE ====================
+function advanceSlot() {
+  S.slot++;
+  if (S.slot > 3) {
+    S.slot = 1; S.day++;
+    if (S.day > 3) { S.phase='GAME_END'; phaseGameEnd(); return; }
+    phaseDayEnd(); return;
+  }
+  S.phase = 'CHOOSE_LOCATION';
+  phaseChooseLocation();
+}
+
+function phaseDayEnd() {
+  renderPanel(`🌙 第${S.day-1}天结束`,
+    `<p class="info-text">你度过了第${S.day-1}天...</p>
+     <p>学识：<b style="color:var(--knowledge)">${S.knowledge}</b></p>
+     <p>精力：<b style="color:var(--energy)">${S.energy}</b></p>
+     <p>成绩：<b style="color:var(--score)">${S.score}</b></p>
+     <p style="color:var(--dim);font-size:13px;">还剩 ${4-S.day} 天，加油！</p>
+     <div class="btn-group">${btn('nextday','开始新的一天 🌅','btn-primary')}</div>`
+  );
+  pendingCallback = (id) => {
+    if (id === 'nextday') {
+      modStat('energy', rng(5, 12)); // 过夜精力回复
+      S.phase = 'CHOOSE_LOCATION'; phaseChooseLocation();
+    }
+  };
+}
+
+// ==================== PHASE: GAME END ====================
+function phaseGameEnd() {
+  const fs = S.score;
+  let grade, gradeClass, gradeText;
+  if (fs >= 95) { grade='S'; gradeClass='S'; gradeText='🏆 优秀！你是卷王！'; }
+  else if (fs >= 80) { grade='A'; gradeClass='A'; gradeText='👏 良好！稳了稳了'; }
+  else if (fs >= 60) { grade='B'; gradeClass='B'; gradeText='😅 及格了，勉强过关'; }
+  else if (fs >= 40) { grade='C'; gradeClass='C'; gradeText='😰 不太妙...'; }
+  else { grade='F'; gradeClass='F'; gradeText='💀 挂科了...但可以重来！'; }
+
+  let advice;
+  if (S.knowledge >= 80 && S.energy < 40 && fs < 75) {
+    advice = '💡 学识很扎实，但考试时精力不足拖了后腿！好成绩需要充沛的精力哦 ⚡ 下次多穿插娱乐回复精力';
+  } else if (S.knowledge >= 80 && S.energy < 50) {
+    advice = '⚡ 学识不错，但精力偏低影响发挥。考试不仅拼知识，也拼状态！';
+  } else if (fs < 60) {
+    advice = '💡 提示：合理管理精力，图书馆上午学习效率最高。用本轮成绩去商店买道具吧！';
+  } else {
+    advice = '💡 道具可以跨轮继承，去商店消费本轮成绩吧！';
+  }
+
+  saveScoreHistory({ run: S.runCount, score: S.score, grade: grade, knowledge: S.knowledge, energy: S.energy });
+  saveInventory();
+
+  renderPanel('📋 期末考试结果',
+    `<div class="result-grade ${gradeClass}">${grade}</div>
+     <p style="font-weight:bold;color:var(--text);">${gradeText}</p>
+     <p>最终成绩：<b style="color:var(--score);font-size:24px;">${fs}</b></p>
+     <p style="color:var(--dim);">学识：${S.knowledge} | 精力：${S.energy}</p>
+     <p style="font-size:13px;color:var(--dim);">${advice}</p>
+     <div class="btn-group">
+       ${btn('shop','🛒 道具商店','btn-shop')}
+       ${btn('rebirth','🔄 重新冲刺','btn-primary')}
+     </div>`
+  );
+
+  pendingCallback = (id) => {
+    if (id === 'shop') { S.phase='SHOP'; phaseShop(); }
+    if (id === 'rebirth') { phaseTitle(); }
+  };
+}
+
+// ==================== PHASE: SHOP ====================
+function phaseShop() {
+  const currency = S.score;
+  let itemsHtml = '';
+  ITEMS.forEach(item => {
+    const owned = S.inventory.find(i=>i.id===item.id);
+    const canBuy = currency >= item.cost && !owned;
+    itemsHtml += `
+      <div class="shop-item">
+        <div class="item-icon">${item.icon}</div>
+        <div class="item-info">
+          <div class="item-name">${item.name}${owned?'<span class="inv-badge">已拥有</span>':''}</div>
+          <div class="item-desc">${item.desc}</div>
+        </div>
+        <div class="item-cost">${item.cost}分</div>
+        ${canBuy ? `<button class="btn-item btn-small" onclick="handleClick('buy_${item.id}')">购买</button>` : ''}
+      </div>
+    `;
+  });
+
+  renderPanel('🛒 道具商店',
+    `<p>可用成绩：<b style="color:var(--score);">${currency}</b></p>
+     <p style="font-size:12px;color:var(--dim);">道具购买后永久拥有，每轮可使用一次</p>
+     <div style="width:100%;display:flex;flex-direction:column;gap:8px;margin:8px 0;">${itemsHtml}</div>
+     ${S.inventory.length>0?`<p style="font-size:12px;color:var(--accent);">🎒 背包：${S.inventory.map(i=>i.icon).join(' ')}</p>`:''}
+     <div class="btn-group">
+       ${btn('rebirth_shop','开始新一轮冲刺 🔄','btn-primary')}
+     </div>`
+  );
+
+  pendingCallback = (id) => {
+    if (id === 'rebirth_shop') { phaseTitle(); }
+    if (id.startsWith('buy_')) {
+      const itemId = id.replace('buy_','');
+      const item = ITEMS.find(i=>i.id===itemId);
+      if (item && S.score >= item.cost && !S.inventory.find(i=>i.id===itemId)) {
+        S.score -= item.cost;
+        S.inventory.push({...item, usedThisRun:false});
+        saveInventory();
+        phaseShop();
+      }
+    }
+  };
+}
+
+// ==================== 启动！ ====================
+loadInventory();
+phaseTitle();
+</script>
+</body>
+</html>
