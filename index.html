@@ -556,7 +556,16 @@ function renderPanel(title, bodyHtml) {
   html += `<div id="panel"><h2>${title}</h2>${bodyHtml}</div>`;
   html += '</div>';
   html += renderHistorySidebar();
+  html += '<div style="width:100%;max-width:520px;text-align:center;margin-top:12px;opacity:0.5;font-size:11px;color:var(--dim);"><a href="https://github.com/jim6642/simstudy" target="_blank" style="color:var(--dim);">📊 simstudy on GitHub</a> · <span id="counter-tag">👀 ...</span></div>';
   $game.innerHTML = html;
+  // 加载计数器
+  loadVisitorCount();
+}
+
+function loadVisitorCount() {
+  const el = document.getElementById('counter-tag');
+  if (!el) return;
+  el.innerHTML = '👀 <img src=\"https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://jim6642.github.io/simstudy/&count_bg=%231a1a2e&title_bg=%231a1a2e&icon_color=%23e2b04a&title=visitors&edge_flat=true\" style=\"height:18px;vertical-align:middle;\" alt=\"visitor count\" />';
 }
 
 function btn(id, text, cls='btn-primary') {
