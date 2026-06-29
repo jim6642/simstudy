@@ -634,8 +634,22 @@ function useItem(itemId) {
   let msg = `使用了 ${item.icon} ${item.name}！`;
   if (item.effect.energy) msg += ` 精力+${item.effect.energy}`;
   const hasBoost = item.effect.studyBoost || item.effect.knowledgeBoost || item.effect.libBoost || item.effect.allRunStudyBoost || item.effect.allRunPlayBoost || item.effect.playBoost || item.effect.energySave || item.effect.energySaveFlat;
-  if (hasBoost) msg += '（增益已激活，持续到本轮结束）';
+  if (hasBoost) {
+    const hasPersist = item.effect.allRunStudyBoost || item.effect.allRunPlayBoost;
+    msg += hasPersist ? '（增益已激活，持续到本轮结束）' : '（本时段增益已激活）';
+  }
   _flashMsg = msg;
+}
+
+function clearOneSlotItems() {
+  const toKeep = new Set();
+  for (const itemId of S.itemsUsedThisRun) {
+    const item = S.inventory.find(i => i.id === itemId);
+    if (item && (item.effect.allRunStudyBoost || item.effect.allRunPlayBoost)) {
+      toKeep.add(itemId);
+    }
+  }
+  S.itemsUsedThisRun = toKeep;
 }
 
 // ==================== PHASE: TITLE ====================
@@ -1078,6 +1092,8 @@ function resolveEvent(choiceIdx) {
 
 // ==================== ADVANCE ====================
 function advanceSlot() {
+  // 清除单时段道具效果（伴侣等全轮道具保留）
+  clearOneSlotItems();
   S.slot++;
   if (S.slot > 3) {
     S.slot = 1; S.day++;
